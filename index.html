@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Emsteel AI - Secured Booth Feedback</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --emsteel-dark: #1a1e22;
+            --emsteel-metal: #2c343b;
+            --emsteel-accent: #00a4e4;
+            --text-main: #ffffff;
+        }
+        
+        * { box-sizing: border-box; }
+
+        body { 
+            margin: 0; 
+            display: flex; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--emsteel-dark); 
+            height: 100vh; 
+            color: #fff; 
+            overflow: hidden; 
+        }
+        
+        #preview-area { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px; 
+            position: relative;
+        }
+        
+        .cam-box { 
+            position: relative; 
+            width: 100%; 
+            max-width: 800px; 
+            border: 4px solid var(--emsteel-metal); 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* CHANGED: Now styled as a static block below the camera */
+        .booth-question-overlay {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+            text-align: center; 
+            font-size: 1.8rem;
+            font-weight: 600; 
+            color: var(--text-main); 
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--emsteel-accent);
+            letter-spacing: 1px;
+        }
+
+        video { display: none; }
+        
+        canvas { 
+            width: 100%; 
+            height: auto; 
+            border-radius: 4px; 
+            transform: scaleX(-1); 
+            background: #000; 
+            display: block; 
+        }
+
+        #sidebar { 
+            width: 350px; 
+            background: var(--emsteel-metal); 
+            padding: 2.5rem; 
+            border-left: 3px solid var(--emsteel-accent); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+        }
+        
+        .stat-card { 
+            background: #1e2226; padding: 1.5rem; margin-bottom: 15px; 
+            border-radius: 8px; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .emoji { font-size: 2.5rem; }
+        .label { color: #95a5a6; font-weight: bold; letter-spacing: 1px; }
+        .count { font-size: 3.5rem; font-weight: 800; display: block; color: var(--text-main); }
+        
+        .loading-bar { position: absolute; bottom: 0; left: 0; height: 6px; background: var(--emsteel-accent); width: 0%; transition: width 0.1s linear; }
+        
+        #sys-status { font-size: 0.9rem; color: #00ff00; font-family: monospace; text-transform: uppercase; height: 20px; margin-bottom: 25px; }
+        
+        .guide { margin-top: 15px; padding: 15px; background: rgba(0,164,228,0.1); border: 1px solid var(--emsteel-accent); border-radius: 8px; font-size: 1.1rem; text-align: center; width: 100%; max-width: 800px; }
+
+        #reset-btn {
+            margin-top: auto; padding: 10px; background: transparent; 
+            color: #444; border: 1px solid #444; cursor: pointer;
+            font-size: 0.7rem; border-radius: 4px; text-transform: uppercase;
+        }
+        #reset-btn:hover { color: #e74c3c; border-color: #e74c3c; }
+
+        /* --- IPAD & MOBILE ADJUSTMENTS --- */
+        @media screen and (max-width: 1024px) {
+            body {
+                flex-direction: column; 
+                overflow-y: auto; 
+                height: auto;
+                min-height: 100vh;
+            }
+
+            #preview-area {
+                min-height: 50vh;
+                padding: 10px;
+            }
+
+            .booth-question-overlay {
+                font-size: 1.4rem;
+                margin-top: 15px;
+            }
+
+            #sidebar {
+                width: 100%; 
+                border-left: none;
+                border-top: 3px solid var(--emsteel-accent);
+                padding: 1.5rem;
+                flex-direction: row; 
+                flex-wrap: wrap;
+                gap: 15px;
+                align-items: center;
+            }
+
+            #sys-status { width: 100%; text-align: center; margin-bottom: 10px; }
+            .stat-card { flex: 1; min-width: 200px; margin-bottom: 0; }
+            .guide { display: none; } 
+            #reset-btn { width: 100%; margin-top: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="preview-area">
+        <div class="cam-box">
+            <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
+            <canvas id="overlay"></canvas>
+        </div>
+        
+        <div class="booth-question-overlay">How was your visit to our booth?</div>
+
+        <div class="guide">
+            👍 <b>Thumbs UP</b> (Happy) | 👎 <b>Thumbs DOWN</b> (Unhappy) <br>
+            <span style="font-size: 0.9rem; color: var(--emsteel-accent)">Hold for 3 seconds to confirm your feedback.</span>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div id="sys-status">SYSTEM READY</div>
+        
+        <div class="stat-card">
+            <div class="card-header">
+                <span class="label">HAPPY</span>
+                <span class="emoji">😊</span>
+            </div>
+            <span id="h-count" class="count">0</span>
+            <div id="h-bar" class="loading-bar"></div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-header">
+                <span class="label">UNHAPPY</span>
+                <span class="emoji">☹️</span>
+            </div>
+            <span id="s-count" class="count">0</span>
+            <div id="s-bar" class="loading-bar"></div>
+        </div>
+
+        <button id="reset-btn">Reset Session Data</button>
+
+        <div style="margin-top: 10px; font-size: 0.75rem; color: #666; width: 100%; text-align: center; padding-top: 10px;">
+            EMSTEEL VISITOR MONITOR v2.5
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
+        const status = document.getElementById('sys-status');
+        
+        let counts = JSON.parse(localStorage.getItem('emsteel_counts')) || { happy: 0, sad: 0 };
+        
+        function updateDisplay() {
+            document.getElementById('h-count').innerText = counts.happy;
+            document.getElementById('s-count').innerText = counts.sad;
+            localStorage.setItem('emsteel_counts', JSON.stringify(counts));
+        }
+        updateDisplay();
+
+        let holdTimer = 0;
+        let isCoolingDown = false; // Prevents double voting
+        const HOLD_TIME = 3000;    // Time to hold gesture
+        const COOLDOWN_TIME = 5000; // Time to wait before next vote (5 seconds)
+
+        function onResults(results) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+            // If we are in cooldown (Thank you mode), draw text on camera and stop processing
+            if (isCoolingDown) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = "#00a4e4";
+                ctx.font = "bold 60px Segoe UI";
+                ctx.textAlign = "center";
+                ctx.fillText("THANK YOU!", canvas.width/2, canvas.height/2);
+                
+                ctx.font = "30px Segoe UI";
+                ctx.fillStyle = "#ffffff";
+                ctx.fillText("Feedback Recorded", canvas.width/2, canvas.height/2 + 50);
+                
+                ctx.restore();
+                return; // STOP HERE
+            }
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 4});
+                drawLandmarks(ctx, landmarks, {color: '#FFFFFF', lineWidth: 1, radius: 2});
+
+                const thumbTip = landmarks[4];
+                const thumbIP = landmarks[3];
+                const indexKnuckle = landmarks[5];
+                const pinkyKnuckle = landmarks[17];
+
+                let gesture = "none";
+                if (thumbTip.y < thumbIP.y && thumbTip.y < indexKnuckle.y && thumbTip.y < pinkyKnuckle.y) gesture = "happy";
+                else if (thumbTip.y > thumbIP.y && thumbTip.y > indexKnuckle.y && thumbTip.y > pinkyKnuckle.y) gesture = "sad";
+
+                if (gesture !== "none") {
+                    handleHold(gesture);
+                } else {
+                    resetHold();
+                }
+            } else {
+                resetHold();
+            }
+            ctx.restore();
+        }
+
+        function handleHold(mood) {
+            holdTimer += 50; 
+            const bar = document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar');
+            const percent = (holdTimer / HOLD_TIME) * 100;
+            bar.style.width = percent + "%";
+            
+            status.innerText = `CONFIRMING ${mood.toUpperCase()}...`;
+            status.style.color = "#f1c40f";
+
+            if (holdTimer >= HOLD_TIME) {
+                // VOTE CONFIRMED
+                counts[mood]++;
+                updateDisplay(); 
+                
+                // TRIGGER COOLDOWN (Lock system)
+                isCoolingDown = true;
+                status.innerText = "FEEDBACK SAVED";
+                status.style.color = "#00a4e4";
+                
+                resetHold(); // clear the bars immediately
+
+                // Unlock after 5 seconds
+                setTimeout(() => {
+                    isCoolingDown = false;
+                    status.innerText = "SYSTEM READY";
+                    status.style.color = "#00ff00";
+                }, COOLDOWN_TIME);
+            }
+        }
+
+        function resetHold() {
+            holdTimer = 0;
+            document.getElementById('h-bar').style.width = "0%";
+            document.getElementById('s-bar').style.width = "0%";
+            if (!isCoolingDown) {
+                status.innerText = "SYSTEM READY";
+                status.style.color = "#00ff00";
+            }
+        }
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if(confirm("Clear all feedback counts?")) {
+                counts = { happy: 0, sad: 0 };
+                updateDisplay();
+            }
+        });
+
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
+        hands.onResults(onResults);
+
+        const camera = new Camera(video, {
+            onFrame: async () => { await hands.send({image: video}); },
+            width: 1280, 
+            height: 720,
+            facingMode: 'user'
+        });
+        camera.start();
+    </script>
+</body>
+</html>
