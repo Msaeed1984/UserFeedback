@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - iPad Feedback v3</title>
+    <title>Emsteel AI - Balanced Accuracy v5</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -109,7 +109,7 @@
 
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 1200; // FAST 1.2 SECONDS
+        const HOLD_TIME = 1200; 
 
         function onResults(results) {
             canvas.width = video.videoWidth;
@@ -120,27 +120,39 @@
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
-                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 4});
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 2});
 
                 if (isCoolingDown) { ctx.restore(); return; }
 
-                // Detection Logic
+                // Basic Closed Fist Logic (tips of 4 fingers below their knuckles)
                 const fingersClosed = 
-                    landmarks[8].y > landmarks[6].y &&  
-                    landmarks[12].y > landmarks[10].y && 
-                    landmarks[16].y > landmarks[14].y && 
-                    landmarks[20].y > landmarks[18].y;
+                    landmarks[8].y > landmarks[5].y &&  
+                    landmarks[12].y > landmarks[9].y && 
+                    landmarks[16].y > landmarks[13].y && 
+                    landmarks[20].y > landmarks[17].y;
 
                 let currentMood = "none";
+                
                 if (fingersClosed) {
                     const thumbTip = landmarks[4];
-                    const thumbIP = landmarks[3];
-                    if (thumbTip.y < thumbIP.y - 0.05) currentMood = "happy";
-                    else if (thumbTip.y > thumbIP.y + 0.05) currentMood = "sad";
+                    const thumbBase = landmarks[2]; // Using base of thumb for more stable comparison
+                    const indexKnuckle = landmarks[5];
+
+                    // --- BALANCED LOGIC ---
+                    // Thumbs UP: Tip is clearly above the index knuckle
+                    if (thumbTip.y < indexKnuckle.y - 0.02) {
+                        currentMood = "happy";
+                        drawIndicator(thumbTip, '#2ecc71'); // Visual Green dot
+                    } 
+                    // Thumbs DOWN: Tip is clearly below the index knuckle
+                    else if (thumbTip.y > indexKnuckle.y + 0.02) {
+                        currentMood = "sad";
+                        drawIndicator(thumbTip, '#e74c3c'); // Visual Red dot
+                    }
                 }
 
                 if (currentMood !== "none") {
-                    holdTimer += 45; // Increment based on frame processing speed
+                    holdTimer += 50; 
                     const bar = document.getElementById(currentMood === 'happy' ? 'h-bar' : 's-bar');
                     bar.style.width = Math.min((holdTimer / HOLD_TIME) * 100, 100) + "%";
 
@@ -156,6 +168,14 @@
                 resetHold();
             }
             ctx.restore();
+        }
+
+        // Helper to draw a dot on the thumb tip so you can see if the AI detects it
+        function drawIndicator(point, color) {
+            ctx.beginPath();
+            ctx.arc(point.x * canvas.width, point.y * canvas.height, 15, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
         }
 
         function triggerSuccess(mood) {
@@ -183,11 +203,16 @@
         }
 
         document.getElementById('reset-btn').onclick = () => {
-            if(confirm("Reset all counts?")) { counts = { happy: 0, sad: 0 }; updateUI(); }
+            if(confirm("Reset data?")) { counts = { happy: 0, sad: 0 }; updateUI(); }
         };
 
         const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
+        hands.setOptions({ 
+            maxNumHands: 1, 
+            modelComplexity: 1, 
+            minDetectionConfidence: 0.7, 
+            minTrackingConfidence: 0.7 
+        });
         hands.onResults(onResults);
 
         const camera = new Camera(video, {
