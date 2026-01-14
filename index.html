@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - Secured Booth Feedback</title>
+    <title>Emsteel AI - iPad Feedback v3</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -17,104 +17,47 @@
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body { 
-            margin: 0; 
-            display: flex; 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--emsteel-dark); 
-            height: 100vh; 
-            color: #fff; 
-            overflow: hidden; 
-        }
+        body { margin: 0; display: flex; font-family: 'Segoe UI', sans-serif; background: var(--emsteel-dark); height: 100vh; color: #fff; overflow: hidden; }
         
-        #preview-area { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 20px; 
-            position: relative;
-        }
+        #preview-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; position: relative; }
         
-        /* CAMERA HEIGHT 600PX */
         .cam-box { 
-            position: relative; 
-            width: 100%; 
-            max-width: 800px; 
-            height: 600px; 
-            border: 5px solid var(--emsteel-metal); 
-            border-radius: 20px; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6); 
-            overflow: hidden;
-            background: #000;
+            position: relative; width: 100%; max-width: 800px; height: 600px; 
+            border: 5px solid var(--emsteel-metal); border-radius: 20px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); overflow: hidden; background: #000;
         }
 
         .booth-question-overlay {
-            width: 100%;
-            max-width: 800px;
-            margin-top: 25px;
-            text-align: center; 
-            font-size: 2.2rem;
-            font-weight: 700; 
-            color: var(--text-main); 
-            padding-bottom: 15px;
-            border-bottom: 3px solid var(--emsteel-accent);
+            width: 100%; max-width: 800px; margin-top: 25px; text-align: center; 
+            font-size: 2.2rem; font-weight: 700; color: var(--text-main); 
+            padding-bottom: 15px; border-bottom: 3px solid var(--emsteel-accent);
         }
 
-        /* Success Message Overlay */
         #success-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(26, 30, 34, 0.98);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(26, 30, 34, 0.98); display: none;
+            flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
         #success-overlay h1 { font-size: 4rem; color: var(--success-green); margin-bottom: 0; }
-        #success-overlay p { font-size: 1.5rem; }
 
         video { display: none; }
         canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
 
-        #sidebar { 
-            width: 380px; 
-            background: var(--emsteel-metal); 
-            padding: 2.5rem; 
-            border-left: 4px solid var(--emsteel-accent); 
-            display: flex; 
-            flex-direction: column; 
-        }
-        
-        .stat-card { 
-            background: #1e2226; padding: 1.8rem; margin-bottom: 20px; 
-            border-radius: 12px; position: relative; overflow: hidden;
-        }
-        
+        #sidebar { width: 380px; background: var(--emsteel-metal); padding: 2.5rem; border-left: 4px solid var(--emsteel-accent); display: flex; flex-direction: column; }
+        .stat-card { background: #1e2226; padding: 1.8rem; margin-bottom: 20px; border-radius: 12px; position: relative; overflow: hidden; }
         .emoji { font-size: 3rem; }
         .label { color: #95a5a6; font-weight: bold; font-size: 1rem; }
         .count { font-size: 4.5rem; font-weight: 800; display: block; color: var(--text-main); }
-        .loading-bar { position: absolute; bottom: 0; left: 0; height: 8px; background: var(--emsteel-accent); width: 0%; transition: width 0.1s linear; }
+        .loading-bar { position: absolute; bottom: 0; left: 0; height: 8px; background: var(--emsteel-accent); width: 0%; transition: width 0.05s linear; }
         #sys-status { font-size: 1rem; color: #00ff00; font-family: monospace; margin-bottom: 30px; }
         
-        .guide { margin-top: 20px; padding: 20px; background: rgba(0,164,228,0.1); border: 1px solid var(--emsteel-accent); border-radius: 12px; text-align: center; }
+        #reset-btn { margin-top: auto; padding: 12px; background: transparent; color: #555; border: 1px solid #444; cursor: pointer; border-radius: 6px; }
 
-        #reset-btn {
-            margin-top: auto; padding: 12px; background: transparent; 
-            color: #555; border: 1px solid #444; cursor: pointer;
-            font-size: 0.8rem; border-radius: 6px; text-transform: uppercase;
-        }
-
-        /* iPad / Tablet Adjustments */
         @media screen and (max-width: 1024px) {
             body { flex-direction: column; overflow-y: auto; height: auto; }
             #sidebar { width: 100%; flex-direction: row; gap: 15px; padding: 1.5rem; border-left: none; border-top: 4px solid var(--emsteel-accent); }
             .stat-card { flex: 1; margin-bottom: 0; }
             .cam-box { height: 500px; }
-            #preview-area { padding: 40px 20px; }
         }
     </style>
 </head>
@@ -124,37 +67,27 @@
         <div class="cam-box">
             <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
             <canvas id="overlay"></canvas>
-            
             <div id="success-overlay">
                 <div id="res-emoji" style="font-size: 8rem;">😊</div>
                 <h1>THANK YOU!</h1>
-                <p>Your visit feedback is recorded.</p>
+                <p>Feedback Recorded</p>
             </div>
         </div>
-        
         <div class="booth-question-overlay">How was your visit to our booth?</div>
-
-        <div class="guide">
-            👍 <b>Thumbs UP</b> (Happy) | 👎 <b>Thumbs DOWN</b> (Unhappy) <br>
-            <span style="font-size: 1rem; color: var(--emsteel-accent); font-weight: bold;">Show a closed fist with thumb out for 2.5s</span>
-        </div>
     </div>
 
     <div id="sidebar">
         <div id="sys-status">● SYSTEM ONLINE</div>
-        
         <div class="stat-card">
             <div class="card-header"><span class="label">HAPPY</span><span class="emoji">😊</span></div>
             <span id="h-count" class="count">0</span>
             <div id="h-bar" class="loading-bar"></div>
         </div>
-
         <div class="stat-card">
             <div class="card-header"><span class="label">UNHAPPY</span><span class="emoji">☹️</span></div>
             <span id="s-count" class="count">0</span>
             <div id="s-bar" class="loading-bar"></div>
         </div>
-
         <button id="reset-btn">Reset Data</button>
     </div>
 
@@ -167,16 +100,16 @@
         
         let counts = JSON.parse(localStorage.getItem('emsteel_counts')) || { happy: 0, sad: 0 };
         
-        function updateDisplay() {
+        function updateUI() {
             document.getElementById('h-count').innerText = counts.happy;
             document.getElementById('s-count').innerText = counts.sad;
             localStorage.setItem('emsteel_counts', JSON.stringify(counts));
         }
-        updateDisplay();
+        updateUI();
 
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 2500; 
+        const HOLD_TIME = 1200; // FAST 1.2 SECONDS
 
         function onResults(results) {
             canvas.width = video.videoWidth;
@@ -187,64 +120,70 @@
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
-                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 5});
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 4});
 
                 if (isCoolingDown) { ctx.restore(); return; }
 
-                // Accuracy: Check if 4 fingers are curled in (tips below knuckles)
+                // Detection Logic
                 const fingersClosed = 
                     landmarks[8].y > landmarks[6].y &&  
                     landmarks[12].y > landmarks[10].y && 
                     landmarks[16].y > landmarks[14].y && 
                     landmarks[20].y > landmarks[18].y;
 
-                let gesture = "none";
+                let currentMood = "none";
                 if (fingersClosed) {
                     const thumbTip = landmarks[4];
                     const thumbIP = landmarks[3];
-                    if (thumbTip.y < thumbIP.y - 0.05) gesture = "happy";
-                    else if (thumbTip.y > thumbIP.y + 0.05) gesture = "sad";
+                    if (thumbTip.y < thumbIP.y - 0.05) currentMood = "happy";
+                    else if (thumbTip.y > thumbIP.y + 0.05) currentMood = "sad";
                 }
 
-                if (gesture !== "none") handleHold(gesture);
-                else resetHold();
-            } else { resetHold(); }
+                if (currentMood !== "none") {
+                    holdTimer += 45; // Increment based on frame processing speed
+                    const bar = document.getElementById(currentMood === 'happy' ? 'h-bar' : 's-bar');
+                    bar.style.width = Math.min((holdTimer / HOLD_TIME) * 100, 100) + "%";
+
+                    if (holdTimer >= HOLD_TIME) {
+                        counts[currentMood]++;
+                        updateUI();
+                        triggerSuccess(currentMood);
+                    }
+                } else {
+                    resetHold();
+                }
+            } else {
+                resetHold();
+            }
             ctx.restore();
         }
 
-        function handleHold(mood) {
-            holdTimer += 60; 
-            const bar = document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar');
-            bar.style.width = (holdTimer / HOLD_TIME * 100) + "%";
-            status.innerText = `● CAPTURING ${mood.toUpperCase()}...`;
-            status.style.color = "#f1c40f";
-
-            if (holdTimer >= HOLD_TIME) {
-                counts[mood]++;
-                updateDisplay();
-                isCoolingDown = true;
-                document.getElementById('res-emoji').innerText = mood === 'happy' ? '😊' : '☹️';
-                success.style.display = 'flex';
+        function triggerSuccess(mood) {
+            isCoolingDown = true;
+            holdTimer = 0;
+            document.getElementById('res-emoji').innerText = (mood === 'happy' ? '😊' : '☹️');
+            success.style.display = 'flex';
+            status.innerText = "● FEEDBACK SAVED";
+            
+            setTimeout(() => {
+                success.style.display = 'none';
+                isCoolingDown = false;
                 resetHold();
-                setTimeout(() => {
-                    success.style.display = 'none';
-                    isCoolingDown = false;
-                }, 4000);
-            }
+            }, 3000);
         }
 
         function resetHold() {
-            holdTimer = 0;
-            document.getElementById('h-bar').style.width = "0%";
-            document.getElementById('s-bar').style.width = "0%";
             if (!isCoolingDown) {
+                holdTimer = 0;
+                document.getElementById('h-bar').style.width = "0%";
+                document.getElementById('s-bar').style.width = "0%";
                 status.innerText = "● SYSTEM ONLINE";
                 status.style.color = "#00ff00";
             }
         }
 
         document.getElementById('reset-btn').onclick = () => {
-            if(confirm("Reset all data?")) { counts = { happy: 0, sad: 0 }; updateDisplay(); }
+            if(confirm("Reset all counts?")) { counts = { happy: 0, sad: 0 }; updateUI(); }
         };
 
         const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
