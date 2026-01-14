@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-dark: #121417;
@@ -54,29 +53,24 @@
         }
 
         #sidebar { 
-            width: 380px; background: #1a1e22; padding: 1.5rem; 
+            width: 380px; background: #1a1e22; padding: 2rem; 
             border-left: 3px solid var(--accent); display: flex; flex-direction: column;
             box-sizing: border-box;
         }
         
         .stat-card { 
-            background: var(--card-bg); padding: 1.2rem; margin-bottom: 15px; 
-            border-radius: 12px; position: relative; overflow: hidden; border: 1px solid #333;
+            background: var(--card-bg); padding: 1.5rem; margin-bottom: 20px; 
+            border-radius: 15px; position: relative; overflow: hidden; border: 1px solid #333;
         }
         
         .card-top { display: flex; justify-content: space-between; align-items: center; }
-        .emoji { font-size: 2.5rem; }
-        .label { color: #95a5a6; font-weight: bold; font-size: 0.8rem; }
-        .count { font-size: 3.5rem; font-weight: 800; display: block; margin-top: 5px; }
+        .emoji { font-size: 3rem; }
+        .label { color: #95a5a6; font-weight: bold; font-size: 0.9rem; }
+        .count { font-size: 4.5rem; font-weight: 800; display: block; margin-top: 10px; }
         
-        .load-bar { position: absolute; bottom: 0; left: 0; height: 6px; width: 0%; transition: width 0.1s linear; }
+        .load-bar { position: absolute; bottom: 0; left: 0; height: 8px; width: 0%; transition: width 0.1s linear; }
         #h-bar { background: var(--happy-green); }
         #s-bar { background: var(--sad-red); }
-
-        #chart-container {
-            background: #1e2226; border-radius: 12px; padding: 10px; 
-            margin-top: 5px; border: 1px solid #333; flex-grow: 0; height: 150px;
-        }
 
         #success-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -85,20 +79,20 @@
         }
 
         #reset-btn { 
-            margin-top: 15px; padding: 10px; background: #2a2e33; 
+            margin-top: 10px; padding: 12px; background: #2a2e33; 
             border: 1px solid #444; color: #888; cursor: pointer; 
-            border-radius: 8px; font-weight: bold; font-size: 0.7rem;
+            border-radius: 8px; font-weight: bold; font-size: 0.75rem;
         }
 
         .footer {
-            margin-top: auto; padding-top: 15px; font-size: 0.7rem;
-            color: #555; line-height: 1.4; text-align: center; border-top: 1px solid #222;
+            margin-top: auto; padding-top: 20px; font-size: 0.75rem;
+            color: #666; line-height: 1.5; text-align: center; border-top: 1px solid #222;
         }
 
         @media screen and (max-width: 1024px) {
             body { flex-direction: column; overflow-y: auto; height: auto; }
-            #sidebar { width: 100%; border-left: none; border-top: 3px solid var(--accent); }
-            .cam-box { height: 450px; }
+            #sidebar { width: 100%; border-left: none; border-top: 3px solid var(--accent); height: auto; }
+            .cam-box { height: 500px; }
         }
     </style>
 </head>
@@ -122,19 +116,15 @@
 
     <div id="sidebar">
         <div class="stat-card">
-            <div class="card-top"><span class="label">HAPPY</span><span class="emoji">😊</span></div>
+            <div class="card-top"><span class="label">HAPPY</span><span class="emoji">👍</span></div>
             <span id="h-count" class="count">0</span>
             <div id="h-bar" class="load-bar"></div>
         </div>
 
         <div class="stat-card">
-            <div class="card-top"><span class="label">UNHAPPY</span><span class="emoji">☹️</span></div>
+            <div class="card-top"><span class="label">UNHAPPY</span><span class="emoji">👎</span></div>
             <span id="s-count" class="count">0</span>
             <div id="s-bar" class="load-bar"></div>
-        </div>
-
-        <div id="chart-container">
-            <canvas id="trendChart"></canvas>
         </div>
 
         <button id="reset-btn" onclick="resetAll()">Clear Session Data</button>
@@ -152,37 +142,15 @@
         const success = document.getElementById('success-screen');
         const sysInfo = document.getElementById('sys-info');
         
-        let counts = JSON.parse(localStorage.getItem('emsteel_v6')) || { happy: 0, sad: 0 };
+        let counts = JSON.parse(localStorage.getItem('emsteel_v7')) || { happy: 0, sad: 0 };
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 1000; 
-
-        // Initialize Chart
-        const chartCtx = document.getElementById('trendChart').getContext('2d');
-        const trendChart = new Chart(chartCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Happy', 'Unhappy'],
-                datasets: [{
-                    data: [counts.happy, counts.sad],
-                    backgroundColor: ['#2ecc71', '#e74c3c'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, display: false }, x: { grid: { display: false }, ticks: { color: '#888' } } }
-            }
-        });
+        const HOLD_TIME = 900; // Slightly faster (0.9s) for high efficiency
 
         function updateDisplay() {
             document.getElementById('h-count').innerText = counts.happy;
             document.getElementById('s-count').innerText = counts.sad;
-            localStorage.setItem('emsteel_v6', JSON.stringify(counts));
-            trendChart.data.datasets[0].data = [counts.happy, counts.sad];
-            trendChart.update();
+            localStorage.setItem('emsteel_v7', JSON.stringify(counts));
         }
         updateDisplay();
 
@@ -196,9 +164,11 @@
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0 && !isCoolingDown) {
                 sysInfo.classList.add('tracking-active');
                 const landmarks = results.multiHandLandmarks[0];
+                
+                // Detection Visualizer
                 drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 2});
 
-                // Check for closed fist (thumb exclusion)
+                // Closed Fist Logic
                 const isFist = landmarks[8].y > landmarks[6].y && 
                                landmarks[12].y > landmarks[10].y && 
                                landmarks[16].y > landmarks[14].y && 
@@ -207,14 +177,19 @@
                 if (isFist) {
                     const thumbTip = landmarks[4];
                     const indexKnuckle = landmarks[5];
-                    let mood = "none";
+                    const middleKnuckle = landmarks[9];
+                    
+                    // BASELINE: The middle point of the hand
+                    const handBaselineY = (indexKnuckle.y + middleKnuckle.y) / 2;
 
-                    // HIGH SENSITIVITY DETECTION
-                    if (thumbTip.y < indexKnuckle.y - 0.035) mood = "happy";
-                    else if (thumbTip.y > indexKnuckle.y + 0.035) mood = "sad";
+                    let mood = "none";
+                    // THUMB UP DETECTION (Highly Responsive)
+                    if (thumbTip.y < handBaselineY - 0.02) mood = "happy";
+                    // THUMB DOWN DETECTION (Highly Responsive)
+                    else if (thumbTip.y > handBaselineY + 0.05) mood = "sad";
 
                     if (mood !== "none") {
-                        holdTimer += 65; 
+                        holdTimer += 60; 
                         document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar').style.width = (holdTimer/HOLD_TIME*100) + "%";
                         if (holdTimer >= HOLD_TIME) {
                             counts[mood]++;
@@ -239,7 +214,7 @@
         function showSuccess(mood) {
             isCoolingDown = true;
             resetProgress();
-            document.getElementById('big-emoji').innerText = mood === 'happy' ? '😊' : '☹️';
+            document.getElementById('big-emoji').innerText = mood === 'happy' ? '👍' : '👎';
             success.style.display = 'flex';
             setTimeout(() => {
                 success.style.display = 'none';
@@ -248,7 +223,7 @@
         }
 
         function resetAll() {
-            if(confirm("Reset all data?")) {
+            if(confirm("Reset all visit data?")) {
                 counts = { happy: 0, sad: 0 };
                 updateDisplay();
             }
