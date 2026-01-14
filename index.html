@@ -3,220 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - Balanced Accuracy v5</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <title>Emsteel AI - Automated Face Feedback</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <style>
         :root {
             --emsteel-dark: #1a1e22;
             --emsteel-metal: #2c343b;
             --emsteel-accent: #00a4e4;
-            --text-main: #ffffff;
             --success-green: #2ecc71;
         }
         
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; display: flex; font-family: 'Segoe UI', sans-serif; background: var(--emsteel-dark); height: 100vh; color: #fff; overflow: hidden; }
-        
-        #preview-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; position: relative; }
-        
-        .cam-box { 
-            position: relative; width: 100%; max-width: 800px; height: 600px; 
-            border: 5px solid var(--emsteel-metal); border-radius: 20px; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6); overflow: hidden; background: #000;
+        body { 
+            margin: 0; background: var(--emsteel-dark); 
+            font-family: 'Segoe UI', sans-serif; color: white; 
+            overflow: hidden; display: flex; flex-direction: column; align-items: center;
         }
 
-        .booth-question-overlay {
-            width: 100%; max-width: 800px; margin-top: 25px; text-align: center; 
-            font-size: 2.2rem; font-weight: 700; color: var(--text-main); 
-            padding-bottom: 15px; border-bottom: 3px solid var(--emsteel-accent);
+        /* HIDDEN SIDEBAR FOR INTERNAL USE ONLY */
+        #admin-panel { 
+            position: fixed; bottom: 10px; right: 10px; 
+            background: rgba(0,0,0,0.8); padding: 10px; 
+            border-radius: 5px; font-family: monospace; font-size: 10px;
+            opacity: 0; /* Hidden from users */
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        #admin-panel:hover { opacity: 1; } /* Only shows when hovering mouse in corner */
+
+        #preview-area { 
+            width: 100%; max-width: 900px; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .cam-box { 
+            position: relative; width: 800px; height: 600px; 
+            border: 5px solid var(--emsteel-metal); border-radius: 25px; 
+            overflow: hidden; background: #000;
+        }
+
+        video, canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        video { display: none; }
+
+        .booth-question {
+            margin-top: 30px; font-size: 2.5rem; font-weight: 700;
+            text-align: center; color: var(--emsteel-accent);
         }
 
         #success-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(26, 30, 34, 0.98); display: none;
-            flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+            background: rgba(26, 30, 34, 0.95); display: none;
+            flex-direction: column; justify-content: center; align-items: center;
         }
-        #success-overlay h1 { font-size: 4rem; color: var(--success-green); margin-bottom: 0; }
+        #success-overlay h1 { font-size: 4rem; color: var(--success-green); }
 
-        video { display: none; }
-        canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
-
-        #sidebar { width: 380px; background: var(--emsteel-metal); padding: 2.5rem; border-left: 4px solid var(--emsteel-accent); display: flex; flex-direction: column; }
-        .stat-card { background: #1e2226; padding: 1.8rem; margin-bottom: 20px; border-radius: 12px; position: relative; overflow: hidden; }
-        .emoji { font-size: 3rem; }
-        .label { color: #95a5a6; font-weight: bold; font-size: 1rem; }
-        .count { font-size: 4.5rem; font-weight: 800; display: block; color: var(--text-main); }
-        .loading-bar { position: absolute; bottom: 0; left: 0; height: 8px; background: var(--emsteel-accent); width: 0%; transition: width 0.05s linear; }
-        #sys-status { font-size: 1rem; color: #00ff00; font-family: monospace; margin-bottom: 30px; }
-        
-        #reset-btn { margin-top: auto; padding: 12px; background: transparent; color: #555; border: 1px solid #444; cursor: pointer; border-radius: 6px; }
-
-        @media screen and (max-width: 1024px) {
-            body { flex-direction: column; overflow-y: auto; height: auto; }
-            #sidebar { width: 100%; flex-direction: row; gap: 15px; padding: 1.5rem; border-left: none; border-top: 4px solid var(--emsteel-accent); }
-            .stat-card { flex: 1; margin-bottom: 0; }
-            .cam-box { height: 500px; }
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--emsteel-accent); box-shadow: 0 0 15px var(--emsteel-accent);
+            animation: scan 3s infinite linear;
         }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
     </style>
 </head>
 <body>
 
     <div id="preview-area">
         <div class="cam-box">
-            <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
+            <div class="scan-line"></div>
+            <video id="webcam"></video>
             <canvas id="overlay"></canvas>
+            
             <div id="success-overlay">
                 <div id="res-emoji" style="font-size: 8rem;">😊</div>
-                <h1>THANK YOU!</h1>
-                <p>Feedback Recorded</p>
+                <h1>ANALYSIS COMPLETE</h1>
+                <p>Thank you for visiting Emsteel!</p>
             </div>
         </div>
-        <div class="booth-question-overlay">How was your visit to our booth?</div>
+        <div class="booth-question">AI SENSING IN PROGRESS...</div>
     </div>
 
-    <div id="sidebar">
-        <div id="sys-status">● SYSTEM ONLINE</div>
-        <div class="stat-card">
-            <div class="card-header"><span class="label">HAPPY</span><span class="emoji">😊</span></div>
-            <span id="h-count" class="count">0</span>
-            <div id="h-bar" class="loading-bar"></div>
-        </div>
-        <div class="stat-card">
-            <div class="card-header"><span class="label">UNHAPPY</span><span class="emoji">☹️</span></div>
-            <span id="s-count" class="count">0</span>
-            <div id="s-bar" class="loading-bar"></div>
-        </div>
-        <button id="reset-btn">Reset Data</button>
+    <div id="admin-panel">
+        DEBUG MODE<br>
+        Happy: <span id="h-count">0</span> | Unhappy: <span id="s-count">0</span><br>
+        <button onclick="localStorage.clear(); location.reload();">Reset All</button>
     </div>
 
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('overlay');
         const ctx = canvas.getContext('2d');
-        const status = document.getElementById('sys-status');
         const success = document.getElementById('success-overlay');
         
-        let counts = JSON.parse(localStorage.getItem('emsteel_counts')) || { happy: 0, sad: 0 };
-        
-        function updateUI() {
+        let counts = JSON.parse(localStorage.getItem('face_feedback')) || { happy: 0, sad: 0 };
+        let isCoolingDown = false;
+        let detectionBuffer = []; // To ensure stable detection
+
+        function updateAdmin() {
             document.getElementById('h-count').innerText = counts.happy;
             document.getElementById('s-count').innerText = counts.sad;
-            localStorage.setItem('emsteel_counts', JSON.stringify(counts));
+            localStorage.setItem('face_feedback', JSON.stringify(counts));
         }
-        updateUI();
-
-        let holdTimer = 0;
-        let isCoolingDown = false;
-        const HOLD_TIME = 1200; 
+        updateAdmin();
 
         function onResults(results) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
             ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmarks = results.multiHandLandmarks[0];
-                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 2});
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0 && !isCoolingDown) {
+                const face = results.multiFaceLandmarks[0];
+                
+                // Key Landmarks for Mouth:
+                // 13 (Upper Lip), 14 (Lower Lip), 61 (Left Corner), 291 (Right Corner)
+                const topLip = face[13];
+                const bottomLip = face[14];
+                const leftCorner = face[61];
+                const rightCorner = face[291];
 
-                if (isCoolingDown) { ctx.restore(); return; }
-
-                // Basic Closed Fist Logic (tips of 4 fingers below their knuckles)
-                const fingersClosed = 
-                    landmarks[8].y > landmarks[5].y &&  
-                    landmarks[12].y > landmarks[9].y && 
-                    landmarks[16].y > landmarks[13].y && 
-                    landmarks[20].y > landmarks[17].y;
-
+                // Logic: Smile increases mouth width and pulls corners up
+                // Frown pulls corners down
+                const mouthWidth = Math.abs(rightCorner.x - leftCorner.x);
+                const mouthHeight = Math.abs(bottomLip.y - topLip.y);
+                const cornerAvgY = (leftCorner.y + rightCorner.y) / 2;
+                
                 let currentMood = "none";
                 
-                if (fingersClosed) {
-                    const thumbTip = landmarks[4];
-                    const thumbBase = landmarks[2]; // Using base of thumb for more stable comparison
-                    const indexKnuckle = landmarks[5];
-
-                    // --- BALANCED LOGIC ---
-                    // Thumbs UP: Tip is clearly above the index knuckle
-                    if (thumbTip.y < indexKnuckle.y - 0.02) {
-                        currentMood = "happy";
-                        drawIndicator(thumbTip, '#2ecc71'); // Visual Green dot
-                    } 
-                    // Thumbs DOWN: Tip is clearly below the index knuckle
-                    else if (thumbTip.y > indexKnuckle.y + 0.02) {
-                        currentMood = "sad";
-                        drawIndicator(thumbTip, '#e74c3c'); // Visual Red dot
-                    }
+                // Sensitivity: Adjusting Y relative to the lip center
+                if (cornerAvgY < topLip.y - 0.01) {
+                    currentMood = "happy"; // Mouth corners are higher than top lip
+                } else if (cornerAvgY > bottomLip.y + 0.005) {
+                    currentMood = "sad"; // Mouth corners are lower than bottom lip
                 }
 
                 if (currentMood !== "none") {
-                    holdTimer += 50; 
-                    const bar = document.getElementById(currentMood === 'happy' ? 'h-bar' : 's-bar');
-                    bar.style.width = Math.min((holdTimer / HOLD_TIME) * 100, 100) + "%";
-
-                    if (holdTimer >= HOLD_TIME) {
-                        counts[currentMood]++;
-                        updateUI();
-                        triggerSuccess(currentMood);
+                    detectionBuffer.push(currentMood);
+                    if (detectionBuffer.length > 15) { // Requires 15 frames (~0.5s) of consistent face
+                        const finalMood = detectionBuffer[0];
+                        counts[finalMood]++;
+                        updateAdmin();
+                        triggerSuccess(finalMood);
+                        detectionBuffer = [];
                     }
                 } else {
-                    resetHold();
+                    detectionBuffer = [];
                 }
-            } else {
-                resetHold();
             }
             ctx.restore();
         }
 
-        // Helper to draw a dot on the thumb tip so you can see if the AI detects it
-        function drawIndicator(point, color) {
-            ctx.beginPath();
-            ctx.arc(point.x * canvas.width, point.y * canvas.height, 15, 0, 2 * Math.PI);
-            ctx.fillStyle = color;
-            ctx.fill();
-        }
-
         function triggerSuccess(mood) {
             isCoolingDown = true;
-            holdTimer = 0;
-            document.getElementById('res-emoji').innerText = (mood === 'happy' ? '😊' : '☹️');
+            document.getElementById('res-emoji').innerText = mood === 'happy' ? '😊' : '☹️';
             success.style.display = 'flex';
-            status.innerText = "● FEEDBACK SAVED";
             
             setTimeout(() => {
                 success.style.display = 'none';
                 isCoolingDown = false;
-                resetHold();
-            }, 3000);
+            }, 4000);
         }
 
-        function resetHold() {
-            if (!isCoolingDown) {
-                holdTimer = 0;
-                document.getElementById('h-bar').style.width = "0%";
-                document.getElementById('s-bar').style.width = "0%";
-                status.innerText = "● SYSTEM ONLINE";
-                status.style.color = "#00ff00";
-            }
-        }
-
-        document.getElementById('reset-btn').onclick = () => {
-            if(confirm("Reset data?")) { counts = { happy: 0, sad: 0 }; updateUI(); }
-        };
-
-        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-        hands.setOptions({ 
-            maxNumHands: 1, 
-            modelComplexity: 1, 
-            minDetectionConfidence: 0.7, 
-            minTrackingConfidence: 0.7 
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
         });
-        hands.onResults(onResults);
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
+        faceMesh.onResults(onResults);
 
         const camera = new Camera(video, {
-            onFrame: async () => { await hands.send({image: video}); },
+            onFrame: async () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                await faceMesh.send({image: video});
+            },
             width: 1280, height: 720
         });
         camera.start();
