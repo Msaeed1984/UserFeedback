@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - Secured Booth Feedback</title>
+    <title>Emsteel AI - iPad Optimized Feedback</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -13,14 +13,15 @@
             --emsteel-metal: #2c343b;
             --emsteel-accent: #00a4e4;
             --text-main: #ffffff;
+            --success-green: #2ecc71;
         }
         
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             margin: 0; 
             display: flex; 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: var(--emsteel-dark); 
             height: 100vh; 
             color: #fff; 
@@ -37,86 +38,90 @@
             position: relative;
         }
         
+        /* INCREASED CAMERA BOX HEIGHT TO 600px */
         .cam-box { 
             position: relative; 
             width: 100%; 
-            max-width: 600px; 
-            /* FIXED HEIGHT ADJUSTMENT HERE */
+            max-width: 800px; 
             height: 600px; 
-            border: 4px solid var(--emsteel-metal); 
-            border-radius: 12px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            border: 5px solid var(--emsteel-metal); 
+            border-radius: 20px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); 
             overflow: hidden;
             background: #000;
         }
 
         .booth-question-overlay {
             width: 100%;
-            max-width: 600px;
-            margin-top: 20px;
+            max-width: 800px;
+            margin-top: 30px;
             text-align: center; 
-            font-size: 1.6rem;
-            font-weight: 600; 
+            font-size: 2.2rem;
+            font-weight: 700; 
             color: var(--text-main); 
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--emsteel-accent);
-            letter-spacing: 1px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--emsteel-accent);
+            text-transform: uppercase;
         }
+
+        /* Success Popup */
+        #success-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(26, 30, 34, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            border-radius: 15px;
+        }
+        #success-overlay h1 { font-size: 4rem; color: var(--success-green); margin: 0; }
+        #success-overlay p { font-size: 1.5rem; color: #fff; }
 
         video { display: none; }
-        
-        canvas { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; /* Ensures the video fills the 350px box nicely */
-            transform: scaleX(-1); 
-            background: #000; 
-            display: block; 
-        }
+        canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
 
         #sidebar { 
-            width: 320px; 
+            width: 380px; 
             background: var(--emsteel-metal); 
             padding: 2rem; 
-            border-left: 3px solid var(--emsteel-accent); 
+            border-left: 4px solid var(--emsteel-accent); 
             display: flex; 
             flex-direction: column; 
-            flex-shrink: 0; 
         }
         
         .stat-card { 
-            background: #1e2226; padding: 1.2rem; margin-bottom: 12px; 
-            border-radius: 8px; position: relative; overflow: hidden;
-            display: flex; flex-direction: column;
+            background: #1e2226; padding: 1.8rem; margin-bottom: 20px; 
+            border-radius: 12px; position: relative; overflow: hidden;
         }
         
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .emoji { font-size: 2rem; }
-        .label { color: #95a5a6; font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; }
-        .count { font-size: 3rem; font-weight: 800; display: block; color: var(--text-main); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; }
+        .emoji { font-size: 3rem; }
+        .label { color: #95a5a6; font-weight: bold; font-size: 1rem; }
+        .count { font-size: 4rem; font-weight: 800; color: var(--text-main); line-height: 1; margin-top: 10px; display: block;}
         
-        .loading-bar { position: absolute; bottom: 0; left: 0; height: 6px; background: var(--emsteel-accent); width: 0%; transition: width 0.1s linear; }
+        .loading-bar { position: absolute; bottom: 0; left: 0; height: 8px; background: var(--emsteel-accent); width: 0%; transition: width 0.1s linear; }
         
-        #sys-status { font-size: 0.8rem; color: #00ff00; font-family: monospace; text-transform: uppercase; height: 20px; margin-bottom: 15px; }
+        #sys-status { font-size: 1rem; color: #00ff00; font-family: monospace; font-weight: bold; margin-bottom: 30px; }
         
-        .guide { margin-top: 15px; padding: 12px; background: rgba(0,164,228,0.1); border: 1px solid var(--emsteel-accent); border-radius: 8px; font-size: 1rem; text-align: center; width: 100%; max-width: 600px; }
+        .guide { margin-top: 20px; padding: 20px; background: rgba(0,164,228,0.1); border: 1px solid var(--emsteel-accent); border-radius: 12px; text-align: center; font-size: 1.1rem; }
 
         #reset-btn {
-            margin-top: auto; padding: 8px; background: transparent; 
+            margin-top: auto; padding: 12px; background: transparent; 
             color: #555; border: 1px solid #444; cursor: pointer;
-            font-size: 0.65rem; border-radius: 4px; text-transform: uppercase;
+            font-size: 0.8rem; border-radius: 6px; text-transform: uppercase;
         }
-        #reset-btn:hover { color: #e74c3c; border-color: #e74c3c; }
 
+        /* iPad / Tablet Landscape/Portrait Optimization */
         @media screen and (max-width: 1024px) {
-            body { flex-direction: column; overflow-y: auto; height: auto; min-height: 100vh; }
-            #preview-area { min-height: 40vh; padding: 15px; }
-            .cam-box { height: 280px; }
-            .booth-question-overlay { font-size: 1.3rem; }
-            #sidebar { width: 100%; border-left: none; border-top: 3px solid var(--emsteel-accent); padding: 1rem; flex-direction: row; flex-wrap: wrap; gap: 10px; }
-            .stat-card { flex: 1; min-width: 140px; }
-            .guide { display: none; } 
-            #reset-btn { width: 100%; }
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            #sidebar { width: 100%; flex-direction: row; gap: 15px; padding: 1.5rem; border-left: none; border-top: 4px solid var(--emsteel-accent); }
+            .stat-card { flex: 1; margin-bottom: 0; }
+            .cam-box { height: 500px; max-width: 90%; }
+            #preview-area { padding: 40px 20px; }
+            .booth-question-overlay { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -126,18 +131,24 @@
         <div class="cam-box">
             <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
             <canvas id="overlay"></canvas>
+            
+            <div id="success-overlay">
+                <h1>THANK YOU!</h1>
+                <p>Your feedback has been recorded.</p>
+                <div class="emoji" id="vote-emoji" style="font-size: 6rem;">😊</div>
+            </div>
         </div>
         
         <div class="booth-question-overlay">How was your visit to our booth?</div>
 
         <div class="guide">
             👍 <b>Thumbs UP</b> (Happy) | 👎 <b>Thumbs DOWN</b> (Unhappy) <br>
-            <span style="font-size: 0.85rem; color: var(--emsteel-accent)">Hold for 3 seconds to confirm.</span>
+            <span style="font-size: 1rem; color: var(--emsteel-accent); font-weight: bold;">Fist must be closed. Hold for 2.5 seconds.</span>
         </div>
     </div>
 
     <div id="sidebar">
-        <div id="sys-status">SYSTEM READY</div>
+        <div id="sys-status">● SYSTEM ACTIVE</div>
         
         <div class="stat-card">
             <div class="card-header">
@@ -157,11 +168,7 @@
             <div id="s-bar" class="loading-bar"></div>
         </div>
 
-        <button id="reset-btn">Reset Session Data</button>
-
-        <div style="margin-top: 10px; font-size: 0.7rem; color: #666; width: 100%; text-align: center;">
-            EMSTEEL VISITOR MONITOR v2.6
-        </div>
+        <button id="reset-btn">Reset Data</button>
     </div>
 
     <script>
@@ -169,6 +176,8 @@
         const canvas = document.getElementById('overlay');
         const ctx = canvas.getContext('2d');
         const status = document.getElementById('sys-status');
+        const successOverlay = document.getElementById('success-overlay');
+        const voteEmoji = document.getElementById('vote-emoji');
         
         let counts = JSON.parse(localStorage.getItem('emsteel_counts')) || { happy: 0, sad: 0 };
         
@@ -181,8 +190,8 @@
 
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 3000; 
-        const COOLDOWN_TIME = 5000;
+        const HOLD_TIME = 2500; 
+        const COOLDOWN_TIME = 3500;
 
         function onResults(results) {
             canvas.width = video.videoWidth;
@@ -194,26 +203,39 @@
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
-                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 4});
-                drawLandmarks(ctx, landmarks, {color: '#FFFFFF', lineWidth: 1, radius: 2});
+                
+                // Draw skeleton (Blue accent color)
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 5});
+                drawLandmarks(ctx, landmarks, {color: '#FFFFFF', lineWidth: 2, radius: 3});
 
                 if (isCoolingDown) {
                     ctx.restore();
                     return; 
                 }
 
+                // Landmark positions
                 const thumbTip = landmarks[4];
                 const thumbIP = landmarks[3];
+                const indexTip = landmarks[8];
                 const indexKnuckle = landmarks[5];
-                const pinkyKnuckle = landmarks[17];
+                
+                // HIGH ACCURACY: Check if 4 main fingers are tucked into the palm
+                // Tip Y must be greater than Knuckle Y (MediaPipe Y increases downward)
+                const fingersClosed = 
+                    landmarks[8].y > landmarks[6].y &&  // Index
+                    landmarks[12].y > landmarks[10].y && // Middle
+                    landmarks[16].y > landmarks[14].y && // Ring
+                    landmarks[20].y > landmarks[18].y;   // Pinky
 
                 let gesture = "none";
                 
-                if (thumbTip.y < thumbIP.y && thumbTip.y < indexKnuckle.y && thumbTip.y < pinkyKnuckle.y) {
-                    gesture = "happy";
-                }
-                else if (thumbTip.y > thumbIP.y && thumbTip.y > indexKnuckle.y && thumbTip.y > pinkyKnuckle.y) {
-                    gesture = "sad";
+                if (fingersClosed) {
+                    // Accuracy threshold: thumb must be clearly separated from the fist
+                    if (thumbTip.y < thumbIP.y - 0.05) {
+                        gesture = "happy";
+                    } else if (thumbTip.y > thumbIP.y + 0.05) {
+                        gesture = "sad";
+                    }
                 }
 
                 if (gesture !== "none") {
@@ -228,28 +250,37 @@
         }
 
         function handleHold(mood) {
-            holdTimer += 50; 
+            holdTimer += 60; 
             const bar = document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar');
             const percent = (holdTimer / HOLD_TIME) * 100;
-            bar.style.width = percent + "%";
+            bar.style.width = Math.min(percent, 100) + "%";
             
-            status.innerText = `DETECTING ${mood.toUpperCase()}...`;
+            status.innerText = `● PROCESSING ${mood.toUpperCase()}...`;
             status.style.color = "#f1c40f";
 
             if (holdTimer >= HOLD_TIME) {
                 counts[mood]++;
                 updateDisplay(); 
-                isCoolingDown = true;
-                resetHold(); 
-                status.innerText = "FEEDBACK SAVED - WAIT 5s";
-                status.style.color = "#00a4e4";
-                
-                setTimeout(() => {
-                    isCoolingDown = false;
-                    status.innerText = "SYSTEM READY";
-                    status.style.color = "#00ff00";
-                }, COOLDOWN_TIME);
+                showSuccess(mood);
             }
+        }
+
+        function showSuccess(mood) {
+            isCoolingDown = true;
+            resetHold(); 
+            
+            // Show Success Screen
+            voteEmoji.innerText = mood === 'happy' ? '😊' : '☹️';
+            successOverlay.style.display = 'flex';
+            status.innerText = "● FEEDBACK SAVED";
+            status.style.color = "var(--success-green)";
+            
+            setTimeout(() => {
+                successOverlay.style.display = 'none';
+                isCoolingDown = false;
+                status.innerText = "● SYSTEM ACTIVE";
+                status.style.color = "#00ff00";
+            }, COOLDOWN_TIME);
         }
 
         function resetHold() {
@@ -257,13 +288,13 @@
             document.getElementById('h-bar').style.width = "0%";
             document.getElementById('s-bar').style.width = "0%";
             if (!isCoolingDown) {
-                status.innerText = "SYSTEM READY";
+                status.innerText = "● SYSTEM ACTIVE";
                 status.style.color = "#00ff00";
             }
         }
 
         document.getElementById('reset-btn').addEventListener('click', () => {
-            if(confirm("Clear all feedback counts?")) {
+            if(confirm("Permanently clear session data?")) {
                 counts = { happy: 0, sad: 0 };
                 updateDisplay();
             }
@@ -273,7 +304,12 @@
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
 
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
+        hands.setOptions({ 
+            maxNumHands: 1, 
+            modelComplexity: 1, 
+            minDetectionConfidence: 0.8, // Increased for higher accuracy
+            minTrackingConfidence: 0.8 
+        });
         hands.onResults(onResults);
 
         const camera = new Camera(video, {
@@ -285,4 +321,3 @@
     </script>
 </body>
 </html>
-
