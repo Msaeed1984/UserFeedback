@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - Interactive Feedback</title>
+    <title>Emsteel AI - Feedback System</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -20,11 +20,30 @@
             margin: 0; display: flex; font-family: 'Segoe UI', sans-serif; 
             background: var(--bg-dark); height: 100vh; color: #fff; overflow: hidden; 
         }
+
+        /* LOGO TOP RIGHT */
+        .logo {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 120px;
+            z-index: 1000;
+        }
         
         /* Main Preview Area */
         #preview-area { 
             flex: 1; display: flex; flex-direction: column; 
             justify-content: center; align-items: center; padding: 20px; 
+        }
+
+        /* CENTERED STATUS */
+        #sys-info { 
+            font-family: monospace; 
+            color: #00ff00; 
+            margin-bottom: 15px; 
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            font-weight: bold;
         }
         
         .cam-box { 
@@ -70,20 +89,37 @@
         }
         #success-screen h1 { font-size: 3.5rem; color: var(--happy-green); margin: 0; }
 
-        #sys-info { font-family: monospace; color: #00ff00; margin-bottom: 30px; font-size: 0.9rem; }
-        #reset-btn { margin-top: auto; padding: 10px; background: none; border: 1px solid #444; color: #666; cursor: pointer; border-radius: 5px; }
+        /* BUTTON AT BOTTOM */
+        #reset-btn { 
+            margin-top: auto; 
+            padding: 15px; 
+            background: #2a2e33; 
+            border: 1px solid #444; 
+            color: #888; 
+            cursor: pointer; 
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        #reset-btn:hover { background: #333; color: #fff; }
 
         @media screen and (max-width: 1024px) {
             body { flex-direction: column; overflow-y: auto; height: auto; }
             #sidebar { width: 100%; flex-direction: row; gap: 15px; padding: 1rem; border-left: none; border-top: 3px solid var(--accent); }
             .stat-card { flex: 1; margin-bottom: 0; }
             .cam-box { height: 500px; }
+            .logo { width: 80px; top: 10px; right: 10px; }
         }
     </style>
 </head>
 <body>
 
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxBoS0BSsJzcyCRUsJHs26-Tp0WhjSS_N0MA&s" alt="Logo" class="logo">
+
     <div id="preview-area">
+        <div id="sys-info">● AI SYSTEM ONLINE</div>
+        
         <div class="cam-box">
             <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
             <canvas id="overlay"></canvas>
@@ -98,8 +134,6 @@
     </div>
 
     <div id="sidebar">
-        <div id="sys-info">● AI SYSTEM ONLINE</div>
-        
         <div class="stat-card">
             <div class="card-top"><span class="label">HAPPY</span><span class="emoji">😊</span></div>
             <span id="h-count" class="count">0</span>
@@ -112,7 +146,7 @@
             <div id="s-bar" class="load-bar"></div>
         </div>
 
-        <button id="reset-btn" onclick="resetAll()">Clear Data</button>
+        <button id="reset-btn" onclick="resetAll()">Clear Session Data</button>
     </div>
 
     <script>
@@ -124,7 +158,7 @@
         let counts = JSON.parse(localStorage.getItem('emsteel_final')) || { happy: 0, sad: 0 };
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 1200; // 1.2 Seconds
+        const HOLD_TIME = 1200; 
 
         function updateDisplay() {
             document.getElementById('h-count').innerText = counts.happy;
@@ -144,7 +178,6 @@
                 const landmarks = results.multiHandLandmarks[0];
                 drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 3});
 
-                // STRICT FIST CHECK: Other fingers must be curled
                 const isFist = landmarks[8].y > landmarks[6].y && 
                                landmarks[12].y > landmarks[10].y && 
                                landmarks[16].y > landmarks[14].y && 
@@ -152,14 +185,10 @@
 
                 if (isFist) {
                     const thumbTip = landmarks[4];
-                    const thumbIP = landmarks[3];
                     const indexKnuckle = landmarks[5];
 
                     let mood = "none";
-                    
-                    // IMPROVED THUMB UP: Uses index knuckle as baseline
                     if (thumbTip.y < indexKnuckle.y - 0.03) mood = "happy";
-                    // IMPROVED THUMB DOWN: Uses index knuckle as baseline
                     else if (thumbTip.y > indexKnuckle.y + 0.06) mood = "sad";
 
                     if (mood !== "none") {
@@ -195,7 +224,7 @@
         }
 
         function resetAll() {
-            if(confirm("Reset all visit data?")) {
+            if(confirm("Permanently reset all data?")) {
                 counts = { happy: 0, sad: 0 };
                 updateDisplay();
             }
