@@ -3,131 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - Pro Accuracy</title>
+    <title>Emsteel AI - Interactive Feedback</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <style>
         :root {
-            --emsteel-dark: #121417;
-            --emsteel-accent: #00a4e4;
-            --success: #2ecc71;
+            --bg-dark: #121417;
+            --card-bg: #1e2226;
+            --accent: #00a4e4;
+            --happy-green: #2ecc71;
+            --sad-red: #e74c3c;
         }
         
         body { 
-            margin: 0; background: var(--emsteel-dark); 
-            font-family: 'Segoe UI', sans-serif; color: white; 
-            overflow: hidden; display: flex; flex-direction: column; align-items: center;
+            margin: 0; display: flex; font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-dark); height: 100vh; color: #fff; overflow: hidden; 
         }
-
-        /* PUBLIC UI - FEEDBACK COUNTS ARE HIDDEN */
-        #header-status {
-            margin-top: 20px; font-family: monospace; color: #00ff00;
-            cursor: pointer; padding: 10px;
+        
+        /* Main Preview Area */
+        #preview-area { 
+            flex: 1; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; padding: 20px; 
         }
-
-        #admin-view {
-            display: none; /* Hidden by default */
-            background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px;
-            margin-top: 10px; border: 1px solid var(--emsteel-accent);
-        }
-
+        
         .cam-box { 
-            position: relative; width: 90%; max-width: 800px; height: 600px; 
-            border: 4px solid #333; border-radius: 20px; 
-            overflow: hidden; background: #000; margin-top: 20px;
+            position: relative; width: 100%; max-width: 800px; height: 600px; 
+            border: 4px solid #333; border-radius: 24px; 
+            overflow: hidden; background: #000; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
         video, canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         video { display: none; }
 
         .question {
-            margin-top: 30px; font-size: 2.2rem; font-weight: 700;
-            text-align: center; max-width: 800px;
+            margin-top: 25px; font-size: 2.4rem; font-weight: 800;
+            text-align: center; color: #fff;
         }
 
-        /* Progress Bars */
-        .progress-container {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 10px;
-            display: flex;
+        /* Stats Sidebar */
+        #sidebar { 
+            width: 350px; background: #1a1e22; padding: 2rem; 
+            border-left: 3px solid var(--accent); display: flex; flex-direction: column; 
         }
-        .p-bar { width: 0%; height: 100%; transition: width 0.1s linear; }
-        #happy-bar { background: var(--success); }
-        #sad-bar { background: #e74c3c; }
+        
+        .stat-card { 
+            background: var(--card-bg); padding: 1.5rem; margin-bottom: 20px; 
+            border-radius: 15px; position: relative; overflow: hidden;
+            border: 1px solid #333;
+        }
+        
+        .card-top { display: flex; justify-content: space-between; align-items: center; }
+        .emoji { font-size: 3rem; }
+        .label { color: #95a5a6; font-weight: bold; font-size: 0.9rem; letter-spacing: 1px; }
+        .count { font-size: 4.5rem; font-weight: 800; display: block; margin-top: 10px; }
+        
+        .load-bar { position: absolute; bottom: 0; left: 0; height: 8px; width: 0%; transition: width 0.1s linear; }
+        #h-bar { background: var(--happy-green); }
+        #s-bar { background: var(--sad-red); }
 
-        /* Success Message */
-        #success-overlay {
+        /* Feedback Overlay */
+        #success-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(18, 20, 23, 0.96); display: none;
+            background: rgba(18, 20, 23, 0.95); display: none;
             flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
-        #success-overlay h1 { font-size: 3.5rem; color: var(--success); margin: 0; }
+        #success-screen h1 { font-size: 3.5rem; color: var(--happy-green); margin: 0; }
+
+        #sys-info { font-family: monospace; color: #00ff00; margin-bottom: 30px; font-size: 0.9rem; }
+        #reset-btn { margin-top: auto; padding: 10px; background: none; border: 1px solid #444; color: #666; cursor: pointer; border-radius: 5px; }
+
+        @media screen and (max-width: 1024px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            #sidebar { width: 100%; flex-direction: row; gap: 15px; padding: 1rem; border-left: none; border-top: 3px solid var(--accent); }
+            .stat-card { flex: 1; margin-bottom: 0; }
+            .cam-box { height: 500px; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="header-status" onclick="handleAdminClick()">● SYSTEM ACTIVE</div>
-
-    <div id="admin-view">
-        HAPPY: <span id="h-count">0</span> | UNHAPPY: <span id="s-count">0</span>
-        <button onclick="resetData()" style="margin-left:15px">Reset</button>
+    <div id="preview-area">
+        <div class="cam-box">
+            <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
+            <canvas id="overlay"></canvas>
+            
+            <div id="success-screen">
+                <div id="big-emoji" style="font-size: 8rem;">😊</div>
+                <h1>THANK YOU!</h1>
+                <p style="font-size: 1.5rem;">Feedback Recorded Successfully</p>
+            </div>
+        </div>
+        <div class="question">How was your visit to Emsteel?</div>
     </div>
 
-    <div class="cam-box">
-        <video id="webcam"></video>
-        <canvas id="overlay"></canvas>
+    <div id="sidebar">
+        <div id="sys-info">● AI SYSTEM ONLINE</div>
         
-        <div id="success-overlay">
-            <div id="res-emoji" style="font-size: 7rem;">😊</div>
-            <h1>THANK YOU!</h1>
-            <p style="font-size: 1.5rem;">Your feedback is recorded.</p>
+        <div class="stat-card">
+            <div class="card-top"><span class="label">HAPPY</span><span class="emoji">😊</span></div>
+            <span id="h-count" class="count">0</span>
+            <div id="h-bar" class="load-bar"></div>
         </div>
 
-        <div class="progress-container">
-            <div id="happy-bar" class="p-bar"></div>
-            <div id="sad-bar" class="p-bar"></div>
+        <div class="stat-card">
+            <div class="card-top"><span class="label">UNHAPPY</span><span class="emoji">☹️</span></div>
+            <span id="s-count" class="count">0</span>
+            <div id="s-bar" class="load-bar"></div>
         </div>
+
+        <button id="reset-btn" onclick="resetAll()">Clear Data</button>
     </div>
-
-    <div class="question">How was your visit to our booth?</div>
-    <p style="color: #666;">Hold a 👍 or 👎 for 1 second</p>
 
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('overlay');
         const ctx = canvas.getContext('2d');
-        const success = document.getElementById('success-overlay');
+        const success = document.getElementById('success-screen');
         
-        let counts = JSON.parse(localStorage.getItem('emsteel_v5')) || { happy: 0, sad: 0 };
+        let counts = JSON.parse(localStorage.getItem('emsteel_final')) || { happy: 0, sad: 0 };
         let holdTimer = 0;
         let isCoolingDown = false;
-        let adminClicks = 0;
-        const HOLD_TIME = 1000; // 1 second for fast iPad response
+        const HOLD_TIME = 1200; // 1.2 Seconds
 
-        function updateUI() {
+        function updateDisplay() {
             document.getElementById('h-count').innerText = counts.happy;
             document.getElementById('s-count').innerText = counts.sad;
-            localStorage.setItem('emsteel_v5', JSON.stringify(counts));
+            localStorage.setItem('emsteel_final', JSON.stringify(counts));
         }
-        updateUI();
-
-        // Admin Secret Toggle
-        function handleAdminClick() {
-            adminClicks++;
-            if(adminClicks >= 3) {
-                const panel = document.getElementById('admin-view');
-                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-                adminClicks = 0;
-            }
-            setTimeout(() => { adminClicks = 0; }, 2000);
-        }
-
-        function resetData() {
-            if(confirm("Clear all feedback?")) {
-                counts = { happy: 0, sad: 0 };
-                updateUI();
-            }
-        }
+        updateDisplay();
 
         function onResults(results) {
             canvas.width = video.videoWidth;
@@ -138,70 +142,63 @@
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0 && !isCoolingDown) {
                 const landmarks = results.multiHandLandmarks[0];
-                
-                // Drawing points for visual feedback
-                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 2});
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 3});
 
-                // FINGERS CLOSED CHECK (Index, Middle, Ring, Pinky)
-                // Tips (8, 12, 16, 20) must be lower than knuckles (5, 9, 13, 17)
-                const isFist = 
-                    landmarks[8].y > landmarks[5].y && 
-                    landmarks[12].y > landmarks[9].y && 
-                    landmarks[16].y > landmarks[13].y && 
-                    landmarks[20].y > landmarks[17].y;
+                // STRICT FIST CHECK: Other fingers must be curled
+                const isFist = landmarks[8].y > landmarks[6].y && 
+                               landmarks[12].y > landmarks[10].y && 
+                               landmarks[16].y > landmarks[14].y && 
+                               landmarks[20].y > landmarks[18].y;
 
                 if (isFist) {
                     const thumbTip = landmarks[4];
-                    const thumbJoint = landmarks[3];
+                    const thumbIP = landmarks[3];
                     const indexKnuckle = landmarks[5];
 
-                    let detected = "none";
+                    let mood = "none";
                     
-                    // THUMB UP LOGIC: Tip is significantly higher than index knuckle
-                    if (thumbTip.y < indexKnuckle.y - 0.04) {
-                        detected = "happy";
-                    } 
-                    // THUMB DOWN LOGIC: Tip is significantly lower than index knuckle
-                    else if (thumbTip.y > indexKnuckle.y + 0.04) {
-                        detected = "sad";
-                    }
+                    // IMPROVED THUMB UP: Uses index knuckle as baseline
+                    if (thumbTip.y < indexKnuckle.y - 0.03) mood = "happy";
+                    // IMPROVED THUMB DOWN: Uses index knuckle as baseline
+                    else if (thumbTip.y > indexKnuckle.y + 0.06) mood = "sad";
 
-                    if (detected !== "none") {
-                        holdTimer += 60; // Frame-based increment
-                        document.getElementById(detected === 'happy' ? 'happy-bar' : 'sad-bar').style.width = (holdTimer/HOLD_TIME*100) + "%";
+                    if (mood !== "none") {
+                        holdTimer += 50; 
+                        document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar').style.width = (holdTimer/HOLD_TIME*100) + "%";
                         
                         if (holdTimer >= HOLD_TIME) {
-                            counts[detected]++;
-                            updateUI();
-                            triggerSuccess(detected);
+                            counts[mood]++;
+                            updateDisplay();
+                            showSuccess(mood);
                         }
-                    } else {
-                        resetBars();
-                    }
-                } else {
-                    resetBars();
-                }
-            } else {
-                resetBars();
-            }
+                    } else { resetProgress(); }
+                } else { resetProgress(); }
+            } else { resetProgress(); }
             ctx.restore();
         }
 
-        function resetBars() {
+        function resetProgress() {
             holdTimer = 0;
-            document.getElementById('happy-bar').style.width = "0%";
-            document.getElementById('sad-bar').style.width = "0%";
+            document.getElementById('h-bar').style.width = "0%";
+            document.getElementById('s-bar').style.width = "0%";
         }
 
-        function triggerSuccess(mood) {
+        function showSuccess(mood) {
             isCoolingDown = true;
-            resetBars();
-            document.getElementById('res-emoji').innerText = mood === 'happy' ? '😊' : '☹️';
+            resetProgress();
+            document.getElementById('big-emoji').innerText = mood === 'happy' ? '😊' : '☹️';
             success.style.display = 'flex';
             setTimeout(() => {
                 success.style.display = 'none';
                 isCoolingDown = false;
             }, 3000);
+        }
+
+        function resetAll() {
+            if(confirm("Reset all visit data?")) {
+                counts = { happy: 0, sad: 0 };
+                updateDisplay();
+            }
         }
 
         const hands = new Hands({
