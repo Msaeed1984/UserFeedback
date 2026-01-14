@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emsteel AI - Feedback System</title>
+    <title>Emsteel AI - Smooth Hand Feedback</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -21,14 +21,9 @@
             background: var(--bg-dark); height: 100vh; color: #fff; overflow: hidden; 
         }
 
-        .logo {
-            position: absolute; top: 20px; right: 20px; width: 120px; z-index: 1000;
-        }
+        .logo { position: absolute; top: 20px; right: 20px; width: 120px; z-index: 1000; }
         
-        #preview-area { 
-            flex: 1; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; padding: 20px; 
-        }
+        #preview-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
 
         #sys-info { 
             font-family: monospace; color: #00ff00; margin-bottom: 15px; 
@@ -47,10 +42,7 @@
         video, canvas { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         video { display: none; }
 
-        .question {
-            margin-top: 25px; font-size: 2.4rem; font-weight: 800;
-            text-align: center; color: #fff;
-        }
+        .question { margin-top: 25px; font-size: 2.4rem; font-weight: 800; text-align: center; color: #fff; }
 
         #sidebar { 
             width: 380px; background: #1a1e22; padding: 2rem; 
@@ -74,15 +66,11 @@
 
         #success-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(18, 20, 23, 0.95); display: none;
+            background: rgba(18, 20, 23, 0.97); display: none;
             flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
 
-        #reset-btn { 
-            margin-top: 10px; padding: 12px; background: #2a2e33; 
-            border: 1px solid #444; color: #888; cursor: pointer; 
-            border-radius: 8px; font-weight: bold; font-size: 0.75rem;
-        }
+        #reset-btn { margin-top: 10px; padding: 12px; background: #2a2e33; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 8px; font-weight: bold; }
 
         .footer {
             margin-top: auto; padding-top: 20px; font-size: 0.75rem;
@@ -91,7 +79,7 @@
 
         @media screen and (max-width: 1024px) {
             body { flex-direction: column; overflow-y: auto; height: auto; }
-            #sidebar { width: 100%; border-left: none; border-top: 3px solid var(--accent); height: auto; }
+            #sidebar { width: 100%; border-left: none; border-top: 3px solid var(--accent); }
             .cam-box { height: 500px; }
         }
     </style>
@@ -106,8 +94,8 @@
             <video id="webcam" playsinline webkit-playsinline muted autoplay></video>
             <canvas id="overlay"></canvas>
             <div id="success-screen">
-                <div id="big-emoji" style="font-size: 8rem;">😊</div>
-                <h1 style="color:var(--happy-green); font-size: 3.5rem; margin:0;">THANK YOU!</h1>
+                <div id="big-emoji" style="font-size: 8rem;">👍</div>
+                <h1 id="success-text" style="color:var(--happy-green); font-size: 3.5rem; margin:0;">THANK YOU!</h1>
                 <p style="font-size: 1.5rem;">Feedback Recorded Successfully</p>
             </div>
         </div>
@@ -142,15 +130,15 @@
         const success = document.getElementById('success-screen');
         const sysInfo = document.getElementById('sys-info');
         
-        let counts = JSON.parse(localStorage.getItem('emsteel_v7')) || { happy: 0, sad: 0 };
+        let counts = JSON.parse(localStorage.getItem('emsteel_v8')) || { happy: 0, sad: 0 };
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 900; // Slightly faster (0.9s) for high efficiency
+        const HOLD_TIME = 800; // Very responsive (0.8s)
 
         function updateDisplay() {
             document.getElementById('h-count').innerText = counts.happy;
             document.getElementById('s-count').innerText = counts.sad;
-            localStorage.setItem('emsteel_v7', JSON.stringify(counts));
+            localStorage.setItem('emsteel_v8', JSON.stringify(counts));
         }
         updateDisplay();
 
@@ -161,35 +149,44 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
+            // ONLY process if hands are found. This completely ignores the face.
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0 && !isCoolingDown) {
                 sysInfo.classList.add('tracking-active');
                 const landmarks = results.multiHandLandmarks[0];
                 
-                // Detection Visualizer
+                // Visual feedback only for hands
                 drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 2});
 
-                // Closed Fist Logic
-                const isFist = landmarks[8].y > landmarks[6].y && 
-                               landmarks[12].y > landmarks[10].y && 
-                               landmarks[16].y > landmarks[14].y && 
-                               landmarks[20].y > landmarks[18].y;
+                // STRICT FIST VALIDATION
+                // Tips of all 4 fingers must be significantly below their middle joints
+                const fingersCurled = 
+                    landmarks[8].y > landmarks[6].y && 
+                    landmarks[12].y > landmarks[10].y && 
+                    landmarks[16].y > landmarks[14].y && 
+                    landmarks[20].y > landmarks[18].y;
 
-                if (isFist) {
+                if (fingersCurled) {
                     const thumbTip = landmarks[4];
-                    const indexKnuckle = landmarks[5];
-                    const middleKnuckle = landmarks[9];
+                    const handBottom = landmarks[0]; // Wrist
+                    const handTop = landmarks[9];    // Middle Knuckle
                     
-                    // BASELINE: The middle point of the hand
-                    const handBaselineY = (indexKnuckle.y + middleKnuckle.y) / 2;
+                    // Calculate hand scale to make it work at different distances
+                    const handSize = Math.abs(handBottom.y - handTop.y);
+                    const threshold = handSize * 0.25; 
 
                     let mood = "none";
-                    // THUMB UP DETECTION (Highly Responsive)
-                    if (thumbTip.y < handBaselineY - 0.02) mood = "happy";
-                    // THUMB DOWN DETECTION (Highly Responsive)
-                    else if (thumbTip.y > handBaselineY + 0.05) mood = "sad";
+                    
+                    // THUMB UP: Tip is significantly higher than the knuckle
+                    if (thumbTip.y < handTop.y - threshold) {
+                        mood = "happy";
+                    } 
+                    // THUMB DOWN: Tip is significantly lower than the knuckle
+                    else if (thumbTip.y > handTop.y + (threshold * 1.5)) {
+                        mood = "sad";
+                    }
 
                     if (mood !== "none") {
-                        holdTimer += 60; 
+                        holdTimer += 50; 
                         document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar').style.width = (holdTimer/HOLD_TIME*100) + "%";
                         if (holdTimer >= HOLD_TIME) {
                             counts[mood]++;
@@ -214,7 +211,17 @@
         function showSuccess(mood) {
             isCoolingDown = true;
             resetProgress();
-            document.getElementById('big-emoji').innerText = mood === 'happy' ? '👍' : '👎';
+            const icon = document.getElementById('big-emoji');
+            const text = document.getElementById('success-text');
+            
+            if(mood === 'happy') {
+                icon.innerText = "👍";
+                text.style.color = "var(--happy-green)";
+            } else {
+                icon.innerText = "👎";
+                text.style.color = "var(--sad-red)";
+            }
+
             success.style.display = 'flex';
             setTimeout(() => {
                 success.style.display = 'none';
@@ -230,7 +237,12 @@
         }
 
         const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+        hands.setOptions({ 
+            maxNumHands: 1, 
+            modelComplexity: 1, 
+            minDetectionConfidence: 0.8, // Increased confidence to prevent ghosts
+            minTrackingConfidence: 0.8 
+        });
         hands.onResults(onResults);
 
         const camera = new Camera(video, {
