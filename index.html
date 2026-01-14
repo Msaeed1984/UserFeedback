@@ -40,7 +40,9 @@
         .cam-box { 
             position: relative; 
             width: 100%; 
-            max-width:600px; 
+            max-width: 600px; 
+            /* FIXED HEIGHT ADJUSTMENT HERE */
+            height: 350px; 
             border: 4px solid var(--emsteel-metal); 
             border-radius: 12px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
@@ -48,36 +50,34 @@
             background: #000;
         }
 
-        /* Question is below the camera box */
         .booth-question-overlay {
             width: 100%;
-            max-width:600px;
-            margin-top: 25px;
+            max-width: 600px;
+            margin-top: 20px;
             text-align: center; 
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600; 
             color: var(--text-main); 
-            padding-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 2px solid var(--emsteel-accent);
             letter-spacing: 1px;
         }
 
-        /* Required for iPad functionality */
         video { display: none; }
         
         canvas { 
             width: 100%; 
-            height: auto; 
-            border-radius: 4px; 
+            height: 100%; 
+            object-fit: cover; /* Ensures the video fills the 350px box nicely */
             transform: scaleX(-1); 
             background: #000; 
             display: block; 
         }
 
         #sidebar { 
-            width: 350px; 
+            width: 320px; 
             background: var(--emsteel-metal); 
-            padding: 2.5rem; 
+            padding: 2rem; 
             border-left: 3px solid var(--emsteel-accent); 
             display: flex; 
             flex-direction: column; 
@@ -85,63 +85,38 @@
         }
         
         .stat-card { 
-            background: #1e2226; padding: 1.5rem; margin-bottom: 15px; 
+            background: #1e2226; padding: 1.2rem; margin-bottom: 12px; 
             border-radius: 8px; position: relative; overflow: hidden;
             display: flex; flex-direction: column;
         }
         
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .emoji { font-size: 2.5rem; }
-        .label { color: #95a5a6; font-weight: bold; letter-spacing: 1px; }
-        .count { font-size: 3.5rem; font-weight: 800; display: block; color: var(--text-main); }
+        .emoji { font-size: 2rem; }
+        .label { color: #95a5a6; font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; }
+        .count { font-size: 3rem; font-weight: 800; display: block; color: var(--text-main); }
         
         .loading-bar { position: absolute; bottom: 0; left: 0; height: 6px; background: var(--emsteel-accent); width: 0%; transition: width 0.1s linear; }
         
-        #sys-status { font-size: 0.9rem; color: #00ff00; font-family: monospace; text-transform: uppercase; height: 20px; margin-bottom: 25px; }
+        #sys-status { font-size: 0.8rem; color: #00ff00; font-family: monospace; text-transform: uppercase; height: 20px; margin-bottom: 15px; }
         
-        .guide { margin-top: 15px; padding: 15px; background: rgba(0,164,228,0.1); border: 1px solid var(--emsteel-accent); border-radius: 8px; font-size: 1.1rem; text-align: center; width: 100%; max-width: 800px; }
+        .guide { margin-top: 15px; padding: 12px; background: rgba(0,164,228,0.1); border: 1px solid var(--emsteel-accent); border-radius: 8px; font-size: 1rem; text-align: center; width: 100%; max-width: 600px; }
 
         #reset-btn {
-            margin-top: auto; padding: 10px; background: transparent; 
-            color: #444; border: 1px solid #444; cursor: pointer;
-            font-size: 0.7rem; border-radius: 4px; text-transform: uppercase;
+            margin-top: auto; padding: 8px; background: transparent; 
+            color: #555; border: 1px solid #444; cursor: pointer;
+            font-size: 0.65rem; border-radius: 4px; text-transform: uppercase;
         }
         #reset-btn:hover { color: #e74c3c; border-color: #e74c3c; }
 
-        /* --- IPAD & MOBILE ADJUSTMENTS --- */
         @media screen and (max-width: 1024px) {
-            body {
-                flex-direction: column; 
-                overflow-y: auto; 
-                height: auto;
-                min-height: 100vh;
-            }
-
-            #preview-area {
-                min-height: 50vh;
-                padding: 10px;
-            }
-
-            .booth-question-overlay {
-                font-size: 1.4rem;
-                margin-top: 15px;
-            }
-
-            #sidebar {
-                width: 100%; 
-                border-left: none;
-                border-top: 3px solid var(--emsteel-accent);
-                padding: 1.5rem;
-                flex-direction: row; 
-                flex-wrap: wrap;
-                gap: 15px;
-                align-items: center;
-            }
-
-            #sys-status { width: 100%; text-align: center; margin-bottom: 10px; }
-            .stat-card { flex: 1; min-width: 200px; margin-bottom: 0; }
+            body { flex-direction: column; overflow-y: auto; height: auto; min-height: 100vh; }
+            #preview-area { min-height: 40vh; padding: 15px; }
+            .cam-box { height: 280px; }
+            .booth-question-overlay { font-size: 1.3rem; }
+            #sidebar { width: 100%; border-left: none; border-top: 3px solid var(--emsteel-accent); padding: 1rem; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+            .stat-card { flex: 1; min-width: 140px; }
             .guide { display: none; } 
-            #reset-btn { width: 100%; margin-top: 15px; }
+            #reset-btn { width: 100%; }
         }
     </style>
 </head>
@@ -157,7 +132,7 @@
 
         <div class="guide">
             👍 <b>Thumbs UP</b> (Happy) | 👎 <b>Thumbs DOWN</b> (Unhappy) <br>
-            <span style="font-size: 0.9rem; color: var(--emsteel-accent)">Hold for 3 seconds to confirm your feedback.</span>
+            <span style="font-size: 0.85rem; color: var(--emsteel-accent)">Hold for 3 seconds to confirm.</span>
         </div>
     </div>
 
@@ -184,7 +159,7 @@
 
         <button id="reset-btn">Reset Session Data</button>
 
-        <div style="margin-top: 10px; font-size: 0.75rem; color: #666; width: 100%; text-align: center; padding-top: 10px;">
+        <div style="margin-top: 10px; font-size: 0.7rem; color: #666; width: 100%; text-align: center;">
             EMSTEEL VISITOR MONITOR v2.6
         </div>
     </div>
@@ -195,7 +170,6 @@
         const ctx = canvas.getContext('2d');
         const status = document.getElementById('sys-status');
         
-        // --- DATA MANAGEMENT ---
         let counts = JSON.parse(localStorage.getItem('emsteel_counts')) || { happy: 0, sad: 0 };
         
         function updateDisplay() {
@@ -205,36 +179,29 @@
         }
         updateDisplay();
 
-        // --- DETECTION VARIABLES ---
         let holdTimer = 0;
-        let isCoolingDown = false; // "Lock" to prevent double voting
-        const HOLD_TIME = 3000;    // 3 seconds to trigger
-        const COOLDOWN_TIME = 5000; // 5 seconds wait after voting
+        let isCoolingDown = false;
+        const HOLD_TIME = 3000; 
+        const COOLDOWN_TIME = 5000;
 
         function onResults(results) {
-            // Resize canvas to match video stream
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             
             ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw the camera feed (Always visible)
             ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-            // Draw Hands
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
                 drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 4});
                 drawLandmarks(ctx, landmarks, {color: '#FFFFFF', lineWidth: 1, radius: 2});
 
-                // If currently cooling down, do NOT calculate gestures
                 if (isCoolingDown) {
                     ctx.restore();
                     return; 
                 }
 
-                // --- GESTURE LOGIC ---
                 const thumbTip = landmarks[4];
                 const thumbIP = landmarks[3];
                 const indexKnuckle = landmarks[5];
@@ -242,12 +209,9 @@
 
                 let gesture = "none";
                 
-                // Thumbs UP Logic (Tip HIGHER than knuckle on screen)
-                // Note: In MediaPipe, Y=0 is top, Y=1 is bottom. So "Smaller Y" is "Higher".
                 if (thumbTip.y < thumbIP.y && thumbTip.y < indexKnuckle.y && thumbTip.y < pinkyKnuckle.y) {
                     gesture = "happy";
                 }
-                // Thumbs DOWN Logic (Tip LOWER than knuckle on screen)
                 else if (thumbTip.y > thumbIP.y && thumbTip.y > indexKnuckle.y && thumbTip.y > pinkyKnuckle.y) {
                     gesture = "sad";
                 }
@@ -258,7 +222,6 @@
                     resetHold();
                 }
             } else {
-                // No hands detected
                 resetHold();
             }
             ctx.restore();
@@ -274,19 +237,13 @@
             status.style.color = "#f1c40f";
 
             if (holdTimer >= HOLD_TIME) {
-                // --- VOTE CONFIRMED ---
                 counts[mood]++;
                 updateDisplay(); 
-                
-                // Activate Cooldown (No visual block, just logic lock)
                 isCoolingDown = true;
                 resetHold(); 
-                
-                // Update Status Text only
                 status.innerText = "FEEDBACK SAVED - WAIT 5s";
                 status.style.color = "#00a4e4";
                 
-                // Unlock after 5 seconds
                 setTimeout(() => {
                     isCoolingDown = false;
                     status.innerText = "SYSTEM READY";
@@ -299,8 +256,6 @@
             holdTimer = 0;
             document.getElementById('h-bar').style.width = "0%";
             document.getElementById('s-bar').style.width = "0%";
-            
-            // Only show "System Ready" if we aren't in the cooldown period
             if (!isCoolingDown) {
                 status.innerText = "SYSTEM READY";
                 status.style.color = "#00ff00";
@@ -324,11 +279,9 @@
         const camera = new Camera(video, {
             onFrame: async () => { await hands.send({image: video}); },
             width: 1280, 
-            height: 720,
-            facingMode: 'user'
+            height: 720
         });
         camera.start();
     </script>
 </body>
 </html>
-
