@@ -34,7 +34,6 @@
             justify-content: center; align-items: center; padding: 20px; 
         }
 
-        /* PULSING STATUS INDICATOR */
         #sys-info { 
             font-family: monospace; 
             color: #00ff00; 
@@ -42,12 +41,6 @@
             font-size: 1.1rem;
             letter-spacing: 2px;
             font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .tracking-active {
-            text-shadow: 0 0 15px #00ff00;
-            transform: scale(1.05);
         }
         
         .cam-box { 
@@ -104,6 +97,7 @@
             font-size: 0.75rem;
         }
 
+        /* FOOTER STYLING */
         .footer {
             margin-top: auto;
             padding-top: 20px;
@@ -169,12 +163,11 @@
         const canvas = document.getElementById('overlay');
         const ctx = canvas.getContext('2d');
         const success = document.getElementById('success-screen');
-        const sysInfo = document.getElementById('sys-info');
         
         let counts = JSON.parse(localStorage.getItem('emsteel_final')) || { happy: 0, sad: 0 };
         let holdTimer = 0;
         let isCoolingDown = false;
-        const HOLD_TIME = 1000; 
+        const HOLD_TIME = 1000; // Reduced to 1 second for even faster response
 
         function updateDisplay() {
             document.getElementById('h-count').innerText = counts.happy;
@@ -191,12 +184,10 @@
             ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0 && !isCoolingDown) {
-                // Activate pulse effect
-                sysInfo.classList.add('tracking-active');
-                
                 const landmarks = results.multiHandLandmarks[0];
                 drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00a4e4', lineWidth: 3});
 
+                // Other 4 fingers must be tucked into the palm
                 const isFist = landmarks[8].y > landmarks[6].y && 
                                landmarks[12].y > landmarks[10].y && 
                                landmarks[16].y > landmarks[14].y && 
@@ -207,12 +198,12 @@
                     const indexKnuckle = landmarks[5];
 
                     let mood = "none";
-                    // Balanced & Quick Detection
+                    // Balanced thresholds: 0.03 for Up and 0.03 for Down relative to index knuckle
                     if (thumbTip.y < indexKnuckle.y - 0.03) mood = "happy";
                     else if (thumbTip.y > indexKnuckle.y + 0.03) mood = "sad";
 
                     if (mood !== "none") {
-                        holdTimer += 60; 
+                        holdTimer += 55; // Faster increment
                         document.getElementById(mood === 'happy' ? 'h-bar' : 's-bar').style.width = (holdTimer/HOLD_TIME*100) + "%";
                         
                         if (holdTimer >= HOLD_TIME) {
@@ -222,10 +213,7 @@
                         }
                     } else { resetProgress(); }
                 } else { resetProgress(); }
-            } else { 
-                sysInfo.classList.remove('tracking-active');
-                resetProgress(); 
-            }
+            } else { resetProgress(); }
             ctx.restore();
         }
 
@@ -238,7 +226,6 @@
         function showSuccess(mood) {
             isCoolingDown = true;
             resetProgress();
-            sysInfo.classList.remove('tracking-active');
             document.getElementById('big-emoji').innerText = mood === 'happy' ? '😊' : '☹️';
             success.style.display = 'flex';
             setTimeout(() => {
